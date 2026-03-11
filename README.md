@@ -131,6 +131,20 @@ Messages are collected from three channel types:
 7. **Watch execution**: Live logs via SSE at `/runs/{runId}`
 8. **PRs created automatically** on GitHub with task context
 
+## Screenshots
+
+**Tasks**
+![Tasks](img/tasks.png)
+
+**Channels**
+![Channels](img/channels.png)
+
+**Generated Plan**
+![Generated Plan](img/task-plan-generated.png)
+
+**Execution in Progress**
+![Execution in Progress](img/plan-implementation-in-progress.png)
+
 ### Integrations
 
 **OpenRouter** (for real LLM responses):
