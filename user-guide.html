@@ -224,6 +224,14 @@
       margin-bottom: 1rem;
     }
 
+    .screenshot {
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+
     footer {
       border-top: 1px solid var(--border);
       padding-top: 2rem;
@@ -300,6 +308,7 @@ pnpm dev</code></pre>
         <tr><td>Integrations</td><td><code>/projects/{id}/integrations</code></td><td>LLM and GitHub setup</td></tr>
         <tr><td>Settings</td><td><code>/projects/{id}/settings</code></td><td>Project configuration</td></tr>
       </table>
+      <img class="screenshot" src="img/tasks.png" alt="Tasks page showing project task list">
     </section>
 
     <!-- 3. Integrations -->
@@ -345,6 +354,7 @@ pnpm dev</code></pre>
         <strong>Important</strong>
         The GitHub OAuth App needs <code>repo</code> scope for full functionality (reading code, creating branches, pushing, creating PRs).
       </div>
+      <img class="screenshot" src="img/repositories.png" alt="Repositories page for selecting GitHub repositories">
     </section>
 
     <!-- 4. Channels -->
@@ -404,6 +414,7 @@ pnpm dev</code></pre>
         <li><strong>Delete</strong>: Remove the channel and stop message collection</li>
         <li><strong>View Messages</strong>: See all collected messages with their triage status</li>
       </ul>
+      <img class="screenshot" src="img/channels.png" alt="Channels page showing configured message channels">
     </section>
 
     <!-- 5. Triage -->
@@ -475,6 +486,7 @@ pnpm dev</code></pre>
           </ul>
         </li>
       </ol>
+      <img class="screenshot" src="img/tasks.png" alt="Task list with pending review items">
 
       <h3>Approving a Task</h3>
       <p>Click <strong>Approve</strong> on a pending task. You can optionally provide instructions that will guide the plan agent:</p>
@@ -484,6 +496,7 @@ pnpm dev</code></pre>
         <li>"Focus only on the backend API, skip UI changes"</li>
       </ul>
       <p>After approval, plan generation starts automatically in the background.</p>
+      <img class="screenshot" src="img/task-generate-plan.png" alt="Task detail with Generate Plan action">
 
       <h3>Task Detail Page</h3>
       <p>Click on any task to see its detail page at <code>/tasks/{taskId}</code>:</p>
@@ -517,6 +530,7 @@ pnpm dev</code></pre>
          EXECUTING ──&gt; DONE / FAILED
                               │
                            Archive</div>
+      <img class="screenshot" src="img/task-plan-processing.png" alt="Plan in draft or awaiting approval state">
 
       <h3>Reviewing a Plan</h3>
       <p>Navigate to a plan from the task detail or plans list. You'll see:</p>
@@ -525,6 +539,7 @@ pnpm dev</code></pre>
         <li>A conversation history with the plan agent</li>
         <li>Action buttons: <strong>Approve</strong>, <strong>Request Changes</strong>, <strong>Reject</strong></li>
       </ul>
+      <img class="screenshot" src="img/task-plan-generated.png" alt="Plan review page with approve, request changes, and reject actions">
 
       <h3>Request Changes</h3>
       <p>If a plan isn't quite right, click <strong>Request Changes</strong> and provide feedback:</p>
@@ -568,6 +583,7 @@ pnpm dev</code></pre>
 
       <h3>Live Logs</h3>
       <p>During execution, you can watch progress in real-time at <code>/runs/{runId}</code>. Logs are streamed via Server-Sent Events (SSE).</p>
+      <img class="screenshot" src="img/plan-implementation-in-progress.png" alt="Live execution log stream during plan execution">
 
       <h3>After the PR is Created</h3>
       <p>OpenAnt continues to monitor the PR:</p>
@@ -580,6 +596,7 @@ pnpm dev</code></pre>
           </ul>
         </li>
       </ul>
+      <img class="screenshot" src="img/plan-completed.png" alt="Completed plan with task marked as DONE and PR created">
 
       <h3>Parallelism</h3>
       <p>You can configure how many plans execute simultaneously per project. Go to <code>/projects/{id}/settings</code> and set the <strong>Max Parallel Runs</strong> value (default: 2, max: 20).</p>
