@@ -1,0 +1,104 @@
+import { getAnthropicConfig } from "../llm/anthropic-config.js";
+import { getLogger } from "../lib/logger.js";
+
+interface PrDescriptionInput {
+  projectId: string;
+  taskTitle: string;
+  taskDescription: string;
+  planMarkdown: string;
+  diffs: { repo: string; diff: string }[];
+}
+
+interface PrDescription {
+  title: string;
+  body: string;
+  commitMessage: string;
+}
+
+/**
+ * Uses the Anthropic API to generate a concise, useful PR title + body
+ * based on the actual code changes and task context.
+ */
+export async function generatePrDescription(input: PrDescriptionInput): Promise<PrDescription> {
+  const log = getLogger();
+  const config = getAnthropicConfig(input.projectId);
+
+  if (!config) {
+    // Fallback if no Anthropic config
+    return fallbackDescription(input);
+  }
+
+  // Truncate diffs to avoid exceeding token limits
+  const maxDiffChars = 30000;
+  let totalChars = 0;
+  const truncatedDiffs = input.diffs.map((d) => {
+    if (totalChars >= maxDiffChars) return { repo: d.repo, diff: "(truncated)" };
+    const remaining = maxDiffChars - totalChars;
+    const diff = d.diff.length > remaining ? d.diff.slice(0, remaining) + "\n... (truncated)" : d.diff;
+    totalChars += diff.length;
+    return { repo: d.repo, diff };
+  });
+
+  const diffsText = truncatedDiffs.map((d) => `### ${d.repo}\n\`\`\`diff\n${d.diff}\n\`\`\``).join("\n\n");
+
+  const prompt = `You are generating a GitHub Pull Request title and description based on actual code changes.
+
+## Task
+**Title:** ${input.taskTitle}
+**Description:** ${input.taskDescription}
+
+## Code Changes
+${diffsText}
+
+Generate a JSON response with:
+- "title": A concise PR title (max 72 chars). Don't prefix with "[OpenAnt]" or similar tags.
+- "body": A markdown PR description with: a brief summary of what changed and why, then a "## Changes" section listing the key modifications per file/area, and a "## Notes" section if there are important caveats.
+- "commitMessage": A conventional commit message (e.g., "feat: add error handling for Slack notifications"). First line max 72 chars.
+
+Respond ONLY with valid JSON, no markdown fences.`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      log.warn({ status: response.status }, "Anthropic API error for PR description, using fallback");
+      return fallbackDescription(input);
+    }
+
+    const data = (await response.json()) as {
+      content: Array<{ type: string; text?: string }>;
+    };
+    const text = data.content.find((c) => c.type === "text")?.text;
+    if (!text) return fallbackDescription(input);
+
+    const parsed = JSON.parse(text) as PrDescription;
+    return {
+      title: parsed.title || `Implement: ${input.taskTitle}`.slice(0, 72),
+      body: parsed.body || input.planMarkdown,
+      commitMessage: parsed.commitMessage || `feat: ${input.taskTitle.toLowerCase()}`,
+    };
+  } catch (err: any) {
+    log.warn({ err: err.message }, "Failed to generate PR description, using fallback");
+    return fallbackDescription(input);
+  }
+}
+
+function fallbackDescription(input: PrDescriptionInput): PrDescription {
+  return {
+    title: `Implement: ${input.taskTitle}`.slice(0, 72),
+    body: `## Summary\n\n${input.taskDescription}\n\n## Plan\n\n${input.planMarkdown}`,
+    commitMessage: `feat: ${input.taskTitle.toLowerCase().slice(0, 60)}`,
+  };
+}
