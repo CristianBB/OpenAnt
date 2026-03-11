@@ -34,6 +34,10 @@ export async function forceTriage(projectId: string) {
   return apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/triage`, { method: "POST" });
 }
 
+export async function pollChannel(channelId: string) {
+  return apiFetch<{ ok: boolean; newMessages: number }>(`/api/channels/${channelId}/poll`, { method: "POST" });
+}
+
 export async function getChannelConfig(channelId: string) {
   return apiFetch<{ id: string; kind: string; name: string; config: Record<string, unknown> }>(
     `/api/channels/${channelId}/config`

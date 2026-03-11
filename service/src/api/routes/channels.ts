@@ -170,6 +170,32 @@ export async function channelRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
+  // Manually poll a channel now (GMAIL and GITHUB_ISSUES only)
+  app.post<{ Params: { channelId: string } }>(
+    "/api/channels/:channelId/poll",
+    async (request, reply) => {
+      const repos = getRepos();
+      const channel = repos.channels.findById(request.params.channelId);
+      if (!channel) {
+        reply.code(404).send({ error: "Channel not found" });
+        return;
+      }
+
+      if (channel.kind !== "GMAIL" && channel.kind !== "GITHUB_ISSUES") {
+        reply.code(400).send({ error: "Channel kind does not support manual polling" });
+        return;
+      }
+
+      try {
+        const { pollSingleChannel } = await import("../../scheduler/jobs/poll-channels.js");
+        const result = await pollSingleChannel(channel);
+        return { ok: true, newMessages: result.newMessages };
+      } catch (err: any) {
+        reply.code(500).send({ error: err.message });
+      }
+    }
+  );
+
   // Force triage now for a project
   app.post<{ Params: { id: string } }>(
     "/api/projects/:id/triage",
