@@ -57,12 +57,34 @@ export function PlanChat({ plan, onPlanUpdate }: PlanChatProps) {
   const [diffContext, setDiffContext] = useState(3);
   const [changeFeedback, setChangeFeedback] = useState("");
   const [showChangeFeedback, setShowChangeFeedback] = useState(false);
+  const [diffHeight, setDiffHeight] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("openant:diffContainerHeight");
+      if (stored) {
+        const parsed = Number(stored);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    return 300;
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const runIdRef = useRef<string | null>(null);
+  const isDragging = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragStartY.current = e.clientY;
+    dragStartHeight.current = diffHeight;
+    setIsResizing(true);
+    e.preventDefault();
+  }, [diffHeight]);
 
   // Load initial data
   useEffect(() => {
@@ -166,6 +188,32 @@ export function PlanChat({ plan, onPlanUpdate }: PlanChatProps) {
     });
     return cleanup;
   }, [plan.id]);
+
+  // Resize drag handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      e.preventDefault();
+      const newHeight = dragStartHeight.current + (dragStartY.current - e.clientY);
+      const clamped = Math.min(Math.max(newHeight, 120), window.innerHeight * 0.85);
+      setDiffHeight(clamped);
+    };
+    const handleMouseUp = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      setIsResizing(false);
+      setDiffHeight((h) => {
+        localStorage.setItem("openant:diffContainerHeight", String(h));
+        return h;
+      });
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -337,7 +385,7 @@ export function PlanChat({ plan, onPlanUpdate }: PlanChatProps) {
   const phaseLabel = PHASE_LABELS[plan.agent_phase ?? "idle"] ?? plan.agent_phase;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div className={`flex h-[calc(100vh-8rem)] flex-col${isResizing ? " select-none" : ""}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-3">
@@ -547,7 +595,13 @@ export function PlanChat({ plan, onPlanUpdate }: PlanChatProps) {
 
       {/* Diff viewer section */}
       {diffs.length > 0 && (
-        <div className="flex-shrink-0 border-t bg-white" style={{ maxHeight: "40vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div className="flex-shrink-0 border-t bg-white" style={{ height: diffHeight, overflow: "hidden", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <div
+            className="flex-shrink-0 w-full h-2 flex items-center justify-center cursor-ns-resize bg-gray-100 hover:bg-indigo-100 transition-colors duration-150 border-b border-gray-200"
+            onMouseDown={handleResizeMouseDown}
+          >
+            <div className="w-8 h-0.5 rounded-full bg-gray-300" />
+          </div>
           <div className="flex items-center justify-between px-4 py-2">
             <h3 className="text-sm font-semibold text-gray-700">Implementation Changes</h3>
             <div className="flex items-center gap-3">
