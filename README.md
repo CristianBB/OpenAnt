@@ -4,6 +4,27 @@ AI-powered task management and code generation platform. Collects messages from 
 
 OpenAnt runs as a **single-user, self-hosted** application — no account registration or login required. Just start the server and begin creating projects.
 
+## Disclaimer
+
+This is a side project developed in my spare time, mainly for learning and experimentation.
+
+Maintenance and updates may be irregular, but contributions are always welcome.  
+If you’d like to help improve the project, feel free to open an issue or submit a pull request.
+
+## Screenshots
+
+**Tasks**
+![Tasks](img/tasks.png)
+
+**Channels**
+![Channels](img/channels.png)
+
+**Generated Plan**
+![Generated Plan](img/task-plan-generated.png)
+
+**Execution in Progress**
+![Execution in Progress](img/plan-implementation-in-progress.png)
+
 ## Quick Start
 
 ```bash
@@ -130,20 +151,6 @@ Messages are collected from three channel types:
 6. **Review plans**: Plans are generated for approved tasks. Approve, reject, or request changes
 7. **Watch execution**: Live logs via SSE at `/runs/{runId}`
 8. **PRs created automatically** on GitHub with task context
-
-## Screenshots
-
-**Tasks**
-![Tasks](img/tasks.png)
-
-**Channels**
-![Channels](img/channels.png)
-
-**Generated Plan**
-![Generated Plan](img/task-plan-generated.png)
-
-**Execution in Progress**
-![Execution in Progress](img/plan-implementation-in-progress.png)
 
 ### Integrations
 
