@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN max_parallel_runs INTEGER NOT NULL DEFAULT 2;
