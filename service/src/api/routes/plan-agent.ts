@@ -8,6 +8,7 @@ import { simpleGit } from "simple-git";
 import { createPullRequest } from "../../runner/pr-creator.js";
 import { generatePrDescription } from "../../agents/pr-description.js";
 import { GitHubClient } from "../../github/github-client.js";
+import { closeRelatedIssues } from "../../lib/close-related-issues.js";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -621,9 +622,11 @@ export async function planAgentRoutes(app: FastifyInstance): Promise<void> {
     if (allMerged && pullRequests.length > 0) {
       repos.plans.updateStatus(plan.id, "DONE");
       repos.plans.update(plan.id, { agent_phase: "done" });
-      // Complete the associated task
+      // Complete the associated task and close related GitHub issues
       if (plan.task_id) {
         repos.tasks.update(plan.task_id, { status: "DONE" });
+        const mergedPr = pullRequests.find((pr) => pr.url);
+        await closeRelatedIssues(plan.task_id, mergedPr?.url ?? undefined);
       }
     }
 
