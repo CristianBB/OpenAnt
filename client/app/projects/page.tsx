@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listProjects, createProject, seedDemoData, type Project } from "@/lib/projects";
+import { listProjects, createProject, deleteProject, type Project } from "@/lib/projects";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -81,12 +81,13 @@ export default function ProjectsPage() {
               <button
                 onClick={async (e) => {
                   e.preventDefault();
-                  await seedDemoData(p.id);
-                  alert("Demo data seeded!");
+                  if (!window.confirm(`Delete project "${p.name}"? This cannot be undone.`)) return;
+                  await deleteProject(p.id);
+                  setProjects((prev) => prev.filter((x) => x.id !== p.id));
                 }}
-                className="ml-4 shrink-0 rounded border px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                className="ml-4 shrink-0 rounded border px-3 py-1 text-xs text-red-600 hover:bg-red-50"
               >
-                Seed Demo
+                Delete
               </button>
             </div>
           ))}

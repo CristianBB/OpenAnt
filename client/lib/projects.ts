@@ -127,3 +127,9 @@ export async function seedDemoData(projectId: string) {
     { method: "POST" }
   );
 }
+
+export async function deleteProject(id: string) {
+  return apiFetch<{ success: boolean }>(`/api/projects/${id}`, {
+    method: "DELETE",
+  });
+}

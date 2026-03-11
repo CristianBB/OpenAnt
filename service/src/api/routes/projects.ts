@@ -37,4 +37,16 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
     const updated = repos.projects.update(request.params.id, body);
     return updated;
   });
+
+  app.delete<{ Params: { id: string } }>("/api/projects/:id", async (request, reply) => {
+    const repos = getRepos();
+    const project = repos.projects.findById(request.params.id);
+    if (!project) {
+      reply.code(404).send({ error: "Project not found" });
+      return;
+    }
+
+    repos.projects.delete(request.params.id);
+    return { success: true };
+  });
 }
