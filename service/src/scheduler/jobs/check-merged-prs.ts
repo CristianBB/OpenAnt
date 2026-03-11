@@ -2,6 +2,7 @@ import { getRepos } from "../../repos/sqlite/index.js";
 import { getLogger } from "../../lib/logger.js";
 import { GitHubClient } from "../../github/github-client.js";
 import { getOAuthToken } from "../../github/oauth.js";
+import { closeRelatedIssues } from "../../lib/close-related-issues.js";
 
 export async function runCheckMergedPrs(): Promise<void> {
   const log = getLogger();
@@ -33,36 +34,10 @@ export async function runCheckMergedPrs(): Promise<void> {
         // Update plan status
         repos.plans.updateStatus(plan.id, "DONE");
 
-        // Update linked task to DONE
+        // Update linked task to DONE and close related GitHub issues
         if (plan.task_id) {
           repos.tasks.update(plan.task_id, { status: "DONE" });
-
-          // Close related GitHub Issues if any source messages came from GitHub
-          const taskLinks = repos.taskSourceMessages.listByTask(plan.task_id);
-          for (const link of taskLinks) {
-            const sourceMsg = repos.sourceMessages.findById(link.source_message_id);
-            if (!sourceMsg) continue;
-
-            const channel = repos.channels.findById(sourceMsg.channel_id);
-            if (!channel || channel.kind !== "GITHUB_ISSUES") continue;
-
-            // Extract issue number from external_id (format: "issue:owner/repo#number")
-            const issueMatch = sourceMsg.external_id.match(/^issue:(.+?)\/(.+?)#(\d+)$/);
-            if (!issueMatch) continue;
-
-            const [, issueOwner, issueRepo, issueNum] = issueMatch;
-            try {
-              await client.closeIssueWithComment(
-                issueOwner,
-                issueRepo,
-                parseInt(issueNum, 10),
-                `This issue has been addressed in ${ghPr.merged ? pr.url : "a pull request"}. Closing automatically.`,
-              );
-              log.info({ issueOwner, issueRepo, issueNum }, "Closed GitHub issue after PR merge");
-            } catch (err: any) {
-              log.warn({ issueOwner, issueRepo, issueNum, err: err.message }, "Failed to close issue");
-            }
-          }
+          await closeRelatedIssues(plan.task_id, pr.url ?? undefined);
         }
 
         log.info({ prId: pr.id, prNumber: pr.github_pr_number }, "PR merged, updated statuses");

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { getRepos } from "../../repos/sqlite/index.js";
 import { runTaskAssignment } from "../../agents/task-assignment-runner.js";
 import { autoGeneratePlanForTask } from "../../agents/plan-agent/auto-generate.js";
+import { closeRelatedIssues } from "../../lib/close-related-issues.js";
 import { z } from "zod";
 import type { TaskStatus } from "../../types/enums.js";
 
@@ -60,7 +61,16 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const body = updateTaskSchema.parse(request.body);
-    return repos.tasks.update(task.id, body);
+    const updated = repos.tasks.update(task.id, body);
+
+    // Close related GitHub issues when task is marked as DONE
+    if (body.status === "DONE") {
+      closeRelatedIssues(task.id).catch((err) => {
+        app.log.error({ taskId: task.id, err }, "Failed to close related issues on task DONE");
+      });
+    }
+
+    return updated;
   });
 
   // Approve a task (transitions from PENDING_REVIEW to OPEN, triggers plan generation)
