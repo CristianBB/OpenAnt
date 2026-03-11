@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getProject, updateProject, type Project } from "@/lib/projects";
+import { getProject, updateProject, seedDemoData, deleteProject, type Project } from "@/lib/projects";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -10,6 +10,9 @@ export default function ProjectSettingsPage() {
   const id = params.id as string;
   const [project, setProject] = useState<Project | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -107,6 +110,56 @@ export default function ProjectSettingsPage() {
           {saving ? "Saving..." : "Save Settings"}
         </button>
       </form>
+
+      <section className="mt-8 rounded border bg-gray-50 p-6">
+        <h2 className="mb-2 text-lg font-semibold">Demo Data</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Populate this project with sample tasks and repositories for testing.
+        </p>
+        {seedResult && (
+          <p className="mb-3 text-sm text-green-600">{seedResult}</p>
+        )}
+        <button
+          onClick={async () => {
+            if (!window.confirm("Seed demo data into this project? This will add sample tasks and repositories.")) return;
+            setSeeding(true);
+            setSeedResult(null);
+            try {
+              await seedDemoData(id);
+              setSeedResult("Demo data seeded successfully.");
+            } finally {
+              setSeeding(false);
+            }
+          }}
+          disabled={seeding}
+          className="rounded border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+        >
+          {seeding ? "Seeding..." : "Seed Demo Data"}
+        </button>
+      </section>
+
+      <section className="mt-6 rounded border border-red-300 bg-red-50 p-6">
+        <h2 className="mb-2 text-lg font-semibold text-red-700">Danger Zone</h2>
+        <p className="mb-4 text-sm text-red-600">
+          Permanently delete this project and all associated data. This cannot be undone.
+        </p>
+        <button
+          onClick={async () => {
+            if (!window.confirm(`Are you sure you want to delete "${project.name}"? All data will be permanently deleted.`)) return;
+            setDeleting(true);
+            try {
+              await deleteProject(id);
+              router.push("/projects");
+            } finally {
+              setDeleting(false);
+            }
+          }}
+          disabled={deleting}
+          className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {deleting ? "Deleting..." : "Delete Project"}
+        </button>
+      </section>
     </div>
   );
 }
