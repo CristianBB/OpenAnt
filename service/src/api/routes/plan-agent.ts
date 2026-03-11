@@ -33,6 +33,14 @@ export async function planAgentRoutes(app: FastifyInstance): Promise<void> {
       return;
     }
 
+    // Return existing plan if one already exists for this task (avoid duplicates)
+    const existingPlans = repos.plans.listByTask(task.id);
+    const activePlan = existingPlans.find((p) => p.status !== "FAILED");
+    if (activePlan) {
+      reply.code(200).send(activePlan);
+      return;
+    }
+
     // Create plan in DB first (need plan.id for workspace path)
     const plan = repos.plans.create({
       project_id: project.id,

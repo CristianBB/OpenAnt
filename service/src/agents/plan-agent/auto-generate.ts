@@ -30,6 +30,14 @@ export async function autoGeneratePlanForTask(taskId: string): Promise<{ planId:
     return null;
   }
 
+  // Skip if a plan already exists for this task (avoid duplicates)
+  const existingPlans = repos.plans.listByTask(taskId);
+  const activePlan = existingPlans.find((p) => p.status !== "FAILED");
+  if (activePlan) {
+    log.debug({ taskId, planId: activePlan.id }, "Auto-generate plan: plan already exists, skipping");
+    return { planId: activePlan.id };
+  }
+
   // Create plan in DB first (need plan.id for workspace path)
   const plan = repos.plans.create({
     project_id: project.id,
