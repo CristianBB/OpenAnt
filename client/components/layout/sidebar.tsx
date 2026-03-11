@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
@@ -22,6 +22,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
 
@@ -40,6 +41,16 @@ export default function Sidebar() {
       .catch(() => {});
   }, [pathname]);
 
+  function handleProjectChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newProjectId = e.target.value;
+    setSelectedProject(newProjectId);
+    if (newProjectId) {
+      const sectionMatch = pathname.match(/\/projects\/[^/]+\/(.+)/);
+      const section = sectionMatch ? sectionMatch[1] : "tasks";
+      router.push(`/projects/${newProjectId}/${section}`);
+    }
+  }
+
   return (
     <aside className="flex h-full w-56 flex-col border-r bg-gray-50">
       <div className="border-b p-4">
@@ -51,7 +62,7 @@ export default function Sidebar() {
       <div className="border-b p-3">
         <select
           value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
+          onChange={handleProjectChange}
           className="w-full rounded border bg-white px-2 py-1.5 text-sm"
         >
           <option value="">Select project...</option>
