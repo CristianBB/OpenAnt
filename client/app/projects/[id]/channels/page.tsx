@@ -7,6 +7,7 @@ import {
   listChannelMessages,
   retryMessage,
   forceTriage,
+  pollChannel,
   updateChannel,
   deleteChannel,
   connectGmail,
@@ -59,6 +60,7 @@ export default function ChannelsPage() {
   const [channelMessages, setChannelMessages] = useState<SourceMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [triaging, setTriaging] = useState(false);
+  const [pollingChannelId, setPollingChannelId] = useState<string | null>(null);
 
   // Edit state
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
@@ -149,6 +151,20 @@ export default function ChannelsPage() {
     if (!confirm("Delete this channel? This will also remove all its messages.")) return;
     await deleteChannel(channelId);
     await loadChannels();
+  }
+
+  async function handlePollChannel(ch: ChannelWithCounts) {
+    setPollingChannelId(ch.id);
+    try {
+      await pollChannel(ch.id);
+      await loadChannels();
+      if (expandedChannelId === ch.id) {
+        const msgs = await listChannelMessages(ch.id);
+        setChannelMessages(msgs);
+      }
+    } finally {
+      setPollingChannelId(null);
+    }
   }
 
   async function handleGmailConnect(e: React.FormEvent) {
@@ -627,6 +643,15 @@ export default function ChannelsPage() {
                   >
                     Edit
                   </button>
+                  {ch.kind !== "SLACK" && (
+                    <button
+                      onClick={() => handlePollChannel(ch)}
+                      disabled={pollingChannelId === ch.id || !ch.enabled || editingChannelId === ch.id}
+                      className="rounded px-2 py-1 text-xs text-green-600 hover:bg-green-50 disabled:opacity-50"
+                    >
+                      {pollingChannelId === ch.id ? "Syncing..." : "Sync"}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleToggle(ch)}
                     className={`rounded px-2 py-1 text-xs ${ch.enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
